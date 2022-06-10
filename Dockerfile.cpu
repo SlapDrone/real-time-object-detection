@@ -1,0 +1,82 @@
+#python 3.9
+FROM ubuntu:20.04
+#dkimg/opencv:4.5.3-ubuntu
+
+ARG YOUR_ENV="dev"
+
+ENV YOUR_ENV=${YOUR_ENV} \
+  PYTHONDONTWRITEBYTECODE=1 \
+  PYTHONFAULTHANDLER=1 \
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random \
+  PIP_NO_CACHE_DIR=off \
+  PIP_DISABLE_PIP_VERSION_CHECK=on \
+  PIP_DEFAULT_TIMEOUT=100 \
+  POETRY_VERSION=1.1.13 \ 
+  DEBIAN_FRONTEND=noninteractive \ 
+  PYTHON_VERSION=3.9.5 \
+  WORKDIR=/usr/app
+  
+# set working directory
+WORKDIR $WORKDIR
+
+# install system dependencies 
+RUN apt update \
+  && apt -y install netcat gcc curl make openssl systemd git build-essential \
+    curl \
+    libbz2-dev \
+    libffi-dev \
+    liblzma-dev \
+    libncursesw5-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    llvm \
+    make \
+    tk-dev \
+    wget \
+    xz-utils \
+    zlib1g-dev \
+  && apt clean
+
+# -- python
+# Set-up necessary Env vars for PyEnv
+ENV PYENV_ROOT /usr/local/.pyenv
+ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+# Install pyenv
+RUN set -ex \
+    && curl https://pyenv.run | bash \
+    && pyenv update \
+    && pyenv install $PYTHON_VERSION \
+    && pyenv global $PYTHON_VERSION \
+    && pyenv rehash
+
+#openCV dependencies
+RUN apt update && apt install libaom0 libatlas3-base libavcodec58 libavformat58 libavutil56 libbluray2 \
+    libcairo2 libchromaprint1 libcroco3 libdatrie1 libdrm2 libfontconfig1 libgdk-pixbuf2.0-0 \
+    libgfortran5 libgme0 libgraphite2-3 libgsm1 libharfbuzz0b libilmbase24 libjbig0 libmp3lame0 libmpg123-0 libogg0 \
+    libopenexr24 libopenjp2-7 libopenmpt0 libopus0 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libpixman-1-0 librsvg2-2 \
+    libshine3 libsnappy1v5 libsoxr0 libspeex1 libssh-gcrypt-4 libswresample3 libswscale5 libthai0 libtheora0 libtiff5 libtwolame0 libva-drm2 \
+    libva-x11-2 libva2 libvdpau1 libvorbis0a libvorbisenc2 libvorbisfile3  libwavpack1 libwebp6 libwebpmux3 libx264-155 \
+    libxcb-render0 libxcb-shm0 libxfixes3 libxrender1 libxvidcore4 libzvbi0 \
+    libcodec2-0.9 libvpx6 libx265-179 -y \
+    #libcodec2-0.8.1 libvpx5 libx265-165 -y \
+    && apt clean -y
+
+# install poetry
+RUN pip install "poetry==$POETRY_VERSION"
+
+# cache python requirements in docker layer
+COPY pyproject.toml poetry.lock*  ./
+
+# venv for multi stage build/wheels
+#RUN poetry config virtualenvs.in-project true 
+# install python dependencies
+RUN poetry install --no-interaction --no-ansi --no-dev
+
+#move local code over
+COPY . .
+
+CMD ["tail", "-f", "/dev/null"]
