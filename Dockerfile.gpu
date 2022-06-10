@@ -23,22 +23,8 @@ WORKDIR $WORKDIR
 # install system dependencies 
 RUN apt update \
   && apt -y install netcat gcc curl make openssl systemd git build-essential \
-    curl \
-    libbz2-dev \
-    libffi-dev \
-    liblzma-dev \
-    libncursesw5-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    libssl-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    llvm \
-    make \
-    tk-dev \
-    wget \
-    xz-utils \
-    zlib1g-dev \
+    curl libbz2-dev libffi-dev liblzma-dev libncursesw5-dev libreadline-dev libsqlite3-dev \
+    libssl-dev libxml2-dev libxmlsec1-dev llvm make tk-dev wget xz-utils zlib1g-dev \
   && apt clean
 
 # -- python
@@ -80,7 +66,7 @@ COPY pyproject.toml poetry.lock*  ./
 # venv for multi stage build/wheels
 #RUN poetry config virtualenvs.in-project true 
 # install python dependencies
-RUN poetry install --no-interaction --no-ansi
+RUN poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
 
 # apply jupyter themes for notebook aesthetics
 RUN poetry run jt -t chesterish -cellw 95%
