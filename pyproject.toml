@@ -9,6 +9,11 @@ track = "mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifac
 track_old = "mlflow ui -h 0.0.0.0 -p 5000"                                
 jn = "jupyter-notebook --no-browser --allow-root --ip 0.0.0.0 --port 8888"
 
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu113"
+default = false
+secondary = true
 
 [tool.poetry.dependencies]
 python = "3.9.5"
@@ -21,6 +26,12 @@ opencv-python-headless = "4.5.3.56"
 opencv-python = "4.5.3.56"
 scikit-image = "*"
 tensorflow = "2.9.0"
+torch = "^1.11.0"
+torchvision = "^0.12.0"
+torchaudio = "0.11.0"
+# MMDet requires mim install mmcv-full in Dockerfile
+openmim = "*"
+mmdet = "*"
 zarr = "*"
 tensorflow-addons = "0.17.0"
 albumentations = "*"
@@ -39,11 +50,11 @@ plotly = "*"
 matplotlib = "*"
 jupyter_contrib_nbextensions = "*"
 jupyterthemes = "*"
-pytest = "^6.2.5"
-flake8 = "^4.0.1"
-black = "^22.1.0"
-pylint = "^2.12.2"
-pytest-cov = "^3.0.0"
+pytest = "*"
+flake8 = "*"
+pylint = "*"
+pytest-cov = "*"
+
 
 
 [build-system]

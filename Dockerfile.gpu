@@ -1,10 +1,7 @@
-#python 3.9
-FROM nvidia/cuda:11.2.0-cudnn8-runtime-ubuntu20.04
-#dkimg/opencv:4.5.3-ubuntu
+# python 3.9
+FROM nvidia/cuda:11.3.0-cudnn8-runtime-ubuntu20.04
 
-ARG YOUR_ENV="dev"
-
-ENV YOUR_ENV=${YOUR_ENV} \
+ENV YOUR_ENV="dev" \
   PYTHONDONTWRITEBYTECODE=1 \
   PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
@@ -12,7 +9,6 @@ ENV YOUR_ENV=${YOUR_ENV} \
   PIP_NO_CACHE_DIR=off \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
   PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.1.13 \ 
   DEBIAN_FRONTEND=noninteractive \ 
   PYTHON_VERSION=3.9.5 \
   WORKDIR=/usr/app
@@ -27,6 +23,22 @@ RUN apt update \
     libssl-dev libxml2-dev libxmlsec1-dev llvm make tk-dev wget xz-utils zlib1g-dev \
   && apt clean
 
+# openCV dependencies
+RUN apt update && apt install libaom0 libatlas3-base libavcodec58 libavformat58 libavutil56 libbluray2 \
+    libcairo2 libchromaprint1 libcroco3 libdatrie1 libdrm2 libfontconfig1 libgdk-pixbuf2.0-0 \
+    libgfortran5 libgme0 libgraphite2-3 libgsm1 libharfbuzz0b libilmbase24 libjbig0 libmp3lame0 libmpg123-0 libogg0 \
+    libopenexr24 libopenjp2-7 libopenmpt0 libopus0 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libpixman-1-0 librsvg2-2 \
+    libshine3 libsnappy1v5 libsoxr0 libspeex1 libssh-gcrypt-4 libswresample3 libswscale5 libthai0 libtheora0 libtiff5 libtwolame0 libva-drm2 \
+    libva-x11-2 libva2 libvdpau1 libvorbis0a libvorbisenc2 libvorbisfile3  libwavpack1 libwebp6 libwebpmux3 libx264-155 \
+    libxcb-render0 libxcb-shm0 libxfixes3 libxrender1 libxvidcore4 libzvbi0 \
+    libcodec2-0.9 libvpx6 libx265-179 -y \
+    && apt clean -y
+
+# install NVIDIA driver version in container2
+ENV NVIDIA_DRIVER_VERSION 495
+ENV NVIDIA_DRIVER nvidia-driver-$NVIDIA_DRIVER_VERSION
+RUN apt install -y --fix-missing $NVIDIA_DRIVER
+
 # -- python
 # Set-up necessary Env vars for PyEnv
 ENV PYENV_ROOT /usr/local/.pyenv
@@ -39,34 +51,20 @@ RUN set -ex \
     && pyenv global $PYTHON_VERSION \
     && pyenv rehash
 
-#openCV dependencies
-RUN apt update && apt install libaom0 libatlas3-base libavcodec58 libavformat58 libavutil56 libbluray2 \
-    libcairo2 libchromaprint1 libcroco3 libdatrie1 libdrm2 libfontconfig1 libgdk-pixbuf2.0-0 \
-    libgfortran5 libgme0 libgraphite2-3 libgsm1 libharfbuzz0b libilmbase24 libjbig0 libmp3lame0 libmpg123-0 libogg0 \
-    libopenexr24 libopenjp2-7 libopenmpt0 libopus0 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libpixman-1-0 librsvg2-2 \
-    libshine3 libsnappy1v5 libsoxr0 libspeex1 libssh-gcrypt-4 libswresample3 libswscale5 libthai0 libtheora0 libtiff5 libtwolame0 libva-drm2 \
-    libva-x11-2 libva2 libvdpau1 libvorbis0a libvorbisenc2 libvorbisfile3  libwavpack1 libwebp6 libwebpmux3 libx264-155 \
-    libxcb-render0 libxcb-shm0 libxfixes3 libxrender1 libxvidcore4 libzvbi0 \
-    libcodec2-0.9 libvpx6 libx265-179 -y \
-    #libcodec2-0.8.1 libvpx5 libx265-165 -y \
-    && apt clean -y
-
 # install poetry
-RUN pip install "poetry==$POETRY_VERSION"
-
-# install NVIDIA driver version in container2
-ENV NVIDIA_DRIVER_VERSION 495
-ENV NVIDIA_DRIVER nvidia-driver-$NVIDIA_DRIVER_VERSION
-RUN apt update
-RUN apt install -y --fix-missing $NVIDIA_DRIVER
+ENV POETRY_HOME /opt/poetry
+ENV PATH $POETRY_HOME/bin:$PATH
+RUN curl -sSL https://install.python-poetry.org | POETRY_PREVIEW=1 python3 -
 
 # cache python requirements in docker layer
 COPY pyproject.toml poetry.lock*  ./
 
-# venv for multi stage build/wheels
-#RUN poetry config virtualenvs.in-project true 
 # install python dependencies
 RUN poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
+#RUN poetry source add --secondary torch "https://download.pytorch.org/whl/cu113"
+RUN poetry source add --secondary mmcv https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
+RUN poetry add https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/mmcv_full-1.5.2-cp39-cp39-manylinux1_x86_64.whl
+#RUN poetry add mmcv-full="1.5.2" --source mmcv
 
 # apply jupyter themes for notebook aesthetics
 RUN poetry run jt -t chesterish -cellw 95%
@@ -75,4 +73,4 @@ RUN poetry run jupyter contrib nbextension install --user
 #move local code over
 COPY . .
 
-CMD ["poetry","run","jupyter-notebook", "--no-browser", "--host", "0.0.0.0"]
+CMD ["poetry", "run", "jupyter-notebook", "--no-browser", "--host", "0.0.0.0"]
