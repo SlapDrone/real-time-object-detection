@@ -63,8 +63,12 @@ COPY pyproject.toml poetry.lock*  ./
 RUN poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
 #RUN poetry source add --secondary torch "https://download.pytorch.org/whl/cu113"
 RUN poetry source add --secondary mmcv https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
-RUN poetry add https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/mmcv_full-1.5.2-cp39-cp39-manylinux1_x86_64.whl
+RUN poetry add https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/mmcv_full-1.5.0-cp39-cp39-manylinux1_x86_64.whl
 #RUN poetry add mmcv-full="1.5.2" --source mmcv
+
+## mmdet fork with picodet
+RUN git clone https://github.com/Bo396543018/Picodet_Pytorch.git
+RUN poetry run pip install ./Picodet_Pytorch
 
 # apply jupyter themes for notebook aesthetics
 RUN poetry run jt -t chesterish -cellw 95%

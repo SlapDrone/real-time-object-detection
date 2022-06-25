@@ -224,8 +224,9 @@ class ESNet(BaseModule):
                 block.name = name
                 blocks.append(block)
                 arch_ix += 1
-            # after each set of repeating blocks; output
-            self.out_ixs.append(arch_ix)
+            # after each set of repeating blocks; output the index of the last block 
+            # for output into the neck
+            self.out_ixs.append(arch_ix-1)
         return blocks
     
     def forward(self, x):
