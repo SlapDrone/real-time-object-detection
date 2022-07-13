@@ -116,7 +116,7 @@ class CSPPAN(BaseModule):
         self.reduce_layers = nn.ModuleList()
         self.top_down_blocks = nn.ModuleList()
         for idx in range(len(in_channels) - 1, 0, -1):
-            # recude已经通过transformation统一做过了。
+            # reduce已transformation统一做过了。
             self.top_down_blocks.append(
                 CSPLayer(
                     in_channels[idx - 1] * 2,
@@ -128,7 +128,8 @@ class CSPPAN(BaseModule):
                     use_depthwise=use_depthwise,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    act_cfg=act_cfg))
+                    act_cfg=act_cfg)
+                )
 
         # build bottom-up blocks
         self.downsamples = nn.ModuleList()
