@@ -83,9 +83,9 @@ class PicoDetHead(BaseModule):
     
     def __post_init_post_parse__(self):
         super().__init__(self.init_cfg)
-        # build conv layers for interpreting neck outputs - classification
+        # build conv layers for interpreting neck outputs for object classification
         self.classification_convs = nn.ModuleList([self._build_convs() for _ in self.strides])
-        # regression (optional, if not sharing weights from classification)
+        # regression as above but for localisation (optional, if not sharing weights from ^)
         self.regression_convs = nn.ModuleList([
             self._build_convs() if not self.share_cls_reg else None for _ in self.strides
         ])
@@ -97,7 +97,7 @@ class PicoDetHead(BaseModule):
         if self.share_cls_reg:
             # C + (x1, x2, y1, y2 + ?)
             self.gfl_classification_conv_out_channels += self.output_channels_regression
-        # classification
+        # classification head for extracting class vectors for objects at each scale
         self.gfl_classification_convs = nn.ModuleList([
             nn.Conv2d(
                 in_channels=self.feat_channels,
@@ -107,7 +107,7 @@ class PicoDetHead(BaseModule):
             )
             for _ in self.strides
         ])
-        # regression (optional, if weights shared done together by classificaiton conv)
+        # location regression head for objects at each scale (optional, not shared w/ classification)
         self.gfl_regression_convs = nn.ModuleList([
             (
                 nn.Conv2d(
@@ -122,7 +122,7 @@ class PicoDetHead(BaseModule):
         ])
     
     def _build_convs(self):
-        """Create a list of self.stacked_convs conv blocks"""
+        """Create a list of self.stacked_convs consecutive conv blocks"""
         chn = (lambda i: self.in_channels if not i else self.feat_channels)
         return nn.ModuleList([
             self.ConvModule(
@@ -140,7 +140,7 @@ class PicoDetHead(BaseModule):
     
     def forward(self, features: tuple[torch.Tensor]) -> tuple[torch.Tensor]:
         """
-        One independent forward pass from each scale branch
+        Perform one independent forward pass from each scale branch
         """
         return tuple(
             self.forward_at_scale_index(single_scale_feature, ix)
@@ -164,7 +164,7 @@ class PicoDetHead(BaseModule):
         gfl_clf_conv = self.gfl_classification_convs[scale_index]
         gfl_reg_conv = self.gfl_regression_convs[scale_index]
         cls_feat = x
-        # classification convs
+        # apply classification convs to input features (typically from neck)
         for cls_conv in clf_convs:
             cls_feat = cls_conv(cls_feat)
         # if sharing convblocks for classifcation and regression,
@@ -179,7 +179,7 @@ class PicoDetHead(BaseModule):
                 ],
                 dim=1
             )
-        # otherwise compute the separate features for location regression
+        # otherwise first compute the separate features for location regression
         else:
             reg_feat = x
             for reg_conv in reg_convs:
