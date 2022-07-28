@@ -1,7 +1,9 @@
 """
 ESNet Backbone network from:
 
-https://arxiv.org/pdf/2111.00902.pdf
+https://arxiv.org/pdf/2111.00902.pd
+
+TODO: refactor this to use dataclass constructor, simplify conv block construction
 """
 from pathlib import Path
 from typing import Sequence, Optional, Union

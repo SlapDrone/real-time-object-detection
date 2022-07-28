@@ -32,26 +32,26 @@ services:
       - LOCAL_DEV=1
       - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
     container_name: train_gpu_container
-  train_cpu:
-    build: 
-      dockerfile: ./Dockerfile.cpu
-    volumes:
-      - .:/usr/app
-    ports:
-      # Jupyter
-      - 8888:8888
-      # Dask cluster
-      - 8787:8787
-      # Tensorboard
-      - 8686:8686
-      - 6006:6006
-      # MLFlow
-      - 5000:5000
-    expose:
-      - 5000
-    command:  bash -c "nohup poetry run poe track & poetry run poe jn & tail -f /dev/null"
-    environment:
-      - TESTING=0
-      - LOCAL_DEV=1
-      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
-    container_name: train_cpu_container
+  # train_cpu:
+  #   build: 
+  #     dockerfile: ./Dockerfile.cpu
+  #   volumes:
+  #     - .:/usr/app
+  #   ports:
+  #     # Jupyter
+  #     - 8888:8888
+  #     # Dask cluster
+  #     - 8787:8787
+  #     # Tensorboard
+  #     - 8686:8686
+  #     - 6006:6006
+  #     # MLFlow
+  #     - 5000:5000
+  #   expose:
+  #     - 5000
+  #   command:  bash -c "nohup poetry run poe track & poetry run poe jn & tail -f /dev/null"
+  #   environment:
+  #     - TESTING=0
+  #     - LOCAL_DEV=1
+  #     - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
+  #   container_name: train_cpu_container
